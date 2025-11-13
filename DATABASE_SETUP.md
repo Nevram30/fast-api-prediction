@@ -1,21 +1,21 @@
 # Database Setup Guide - Railway MySQL Integration
 
-This guide explains how to set up and use the MySQL database integration for saving fish price predictions.
+This guide explains how to set up and use the MySQL database integration for saving fish harvest forecasts.
 
 ## Overview
 
-The API now automatically saves all prediction requests and results to a MySQL database. This allows you to:
-- Track all prediction requests with metadata (IP, timestamp, location)
-- Query historical predictions
-- Analyze prediction patterns
-- Retrieve predictions by various filters
+The API now automatically saves all harvest forecast requests and results to a MySQL database. This allows you to:
+- Track all forecast requests with metadata (IP, timestamp, location)
+- Query historical forecasts
+- Analyze forecast patterns
+- Retrieve forecasts by various filters
 
 ## Database Schema
 
 ### Tables
 
 #### `prediction_requests`
-Stores metadata about each prediction request.
+Stores metadata about each harvest forecast request.
 
 | Column | Type | Description |
 |--------|------|-------------|
@@ -24,24 +24,24 @@ Stores metadata about each prediction request.
 | species | VARCHAR(50) | Fish species (tilapia/bangus) |
 | province | VARCHAR(100) | Province name |
 | city | VARCHAR(100) | City/Municipality name |
-| date_from | DATE | Start date of prediction range |
-| date_to | DATE | End date of prediction range |
+| date_from | DATE | Start date of forecast range |
+| date_to | DATE | End date of forecast range |
 | created_at | TIMESTAMP | When request was made |
 | ip_address | VARCHAR(45) | Client IP address |
 | user_agent | TEXT | Client user agent |
 
 #### `predictions`
-Stores individual prediction points.
+Stores individual harvest forecast points.
 
 | Column | Type | Description |
 |--------|------|-------------|
 | id | INT (PK) | Auto-increment primary key |
 | request_id | VARCHAR(36) | Foreign key to prediction_requests |
-| prediction_date | DATE | Date of this prediction |
-| predicted_price | DECIMAL(10,2) | Predicted price in PHP |
+| prediction_date | DATE | Date of this forecast |
+| predicted_price | DECIMAL(10,2) | Predicted harvest amount (kg) |
 | confidence_lower | DECIMAL(10,2) | Lower confidence bound (optional) |
 | confidence_upper | DECIMAL(10,2) | Upper confidence bound (optional) |
-| created_at | TIMESTAMP | When prediction was saved |
+| created_at | TIMESTAMP | When forecast was saved |
 
 ## Railway Setup
 
@@ -117,7 +117,7 @@ The application will:
 
 ## API Endpoints
 
-### 1. Make Prediction (Auto-saves to Database)
+### 1. Make Harvest Forecast (Auto-saves to Database)
 
 **POST** `/api/v1/predict`
 
@@ -143,7 +143,7 @@ The application will:
 }
 ```
 
-### 2. Get All Saved Predictions
+### 2. Get All Saved Forecasts
 
 **GET** `/api/v1/predictions`
 
@@ -181,7 +181,7 @@ GET /api/v1/predictions?species=tilapia&province=Pampanga&limit=10
 }
 ```
 
-### 3. Get Specific Prediction by ID
+### 3. Get Specific Forecast by ID
 
 **GET** `/api/v1/predictions/{request_id}`
 
@@ -207,7 +207,7 @@ GET /api/v1/predictions/550e8400-e29b-41d4-a716-446655440000
   "predictions": [
     {
       "date": "2024-01-01",
-      "predicted_price": 975.0,
+      "predicted_harvest": 975.0,
       "confidence_lower": null,
       "confidence_upper": null
     },
@@ -217,7 +217,7 @@ GET /api/v1/predictions/550e8400-e29b-41d4-a716-446655440000
 }
 ```
 
-### 4. Delete Prediction
+### 4. Delete Forecast
 
 **DELETE** `/api/v1/predictions/{request_id}`
 
@@ -230,7 +230,7 @@ DELETE /api/v1/predictions/550e8400-e29b-41d4-a716-446655440000
 ```json
 {
   "success": true,
-  "message": "Prediction request 550e8400-e29b-41d4-a716-446655440000 deleted successfully"
+  "message": "Harvest forecast request 550e8400-e29b-41d4-a716-446655440000 deleted successfully"
 }
 ```
 
@@ -238,9 +238,9 @@ DELETE /api/v1/predictions/550e8400-e29b-41d4-a716-446655440000
 
 The application is designed to be resilient:
 
-1. **Database Unavailable**: If the database is not configured or unavailable, the API will still work but won't save predictions. A warning will be logged.
+1. **Database Unavailable**: If the database is not configured or unavailable, the API will still work but won't save forecasts. A warning will be logged.
 
-2. **Database Save Failure**: If saving to the database fails, the prediction will still be returned to the user. The error will be logged.
+2. **Database Save Failure**: If saving to the database fails, the forecast will still be returned to the user. The error will be logged.
 
 3. **Query Endpoints**: If the database is unavailable, query endpoints will return a 503 Service Unavailable error.
 
@@ -267,7 +267,7 @@ The `/api/v1/health` endpoint includes database status:
 Railway logs will show:
 - Database connection status
 - Table creation status
-- Prediction save operations
+- Forecast save operations
 - Any database errors
 
 ## Database Maintenance
@@ -284,10 +284,10 @@ Railway provides automatic backups for MySQL databases. You can also:
 
 ### Cleanup Old Data
 
-You can delete old predictions using the DELETE endpoint or directly in the database:
+You can delete old forecasts using the DELETE endpoint or directly in the database:
 
 ```sql
--- Delete predictions older than 90 days
+-- Delete forecasts older than 90 days
 DELETE FROM prediction_requests 
 WHERE created_at < DATE_SUB(NOW(), INTERVAL 90 DAY);
 ```

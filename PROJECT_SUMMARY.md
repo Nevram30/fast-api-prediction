@@ -2,7 +2,7 @@
 
 ## ✅ What Has Been Created
 
-Your complete FastAPI ML Service for Fish Price Forecasting is now ready!
+Your complete FastAPI ML Service for Fish Harvest Forecasting is now ready!
 
 ### 📁 Project Structure
 
@@ -89,7 +89,7 @@ fastapi/
 | GET | `/redoc` | Alternative API documentation |
 | GET | `/api/v1/health` | Health check |
 | GET | `/api/v1/models` | List available models |
-| POST | `/api/v1/predict` | Get price predictions |
+| POST | `/api/v1/predict` | Get harvest forecasts |
 
 ## 🔧 Next Steps
 
@@ -135,8 +135,8 @@ Update your API route to call the FastAPI service (see DEPLOYMENT.md for details
 ## 📊 Model Information
 
 Your models are located in `app/models/`:
-- `tilapia_forecast_best_model.pkl` - Tilapia price prediction model
-- `bangus_forecast_best_model.pkl` - Bangus price prediction model
+- `tilapia_forecast_best_model.pkl` - Tilapia harvest forecast model
+- `bangus_forecast_best_model.pkl` - Bangus harvest forecast model
 
 **Important**: The `app/predictor.py` file includes a `_prepare_features()` method that you may need to customize based on your model's specific feature requirements.
 
@@ -147,7 +147,7 @@ Your models are located in `app/models/`:
 curl http://localhost:8000/api/v1/health
 ```
 
-### Get Predictions
+### Get Harvest Forecasts
 ```bash
 curl -X POST http://localhost:8000/api/v1/predict \
   -H "Content-Type: application/json" \
@@ -279,8 +279,8 @@ pip install -r requirements.txt
 uvicorn app.main:app --reload
 
 # Docker build
-docker build -t fish-price-ml-service .
-docker run -p 8000:8000 fish-price-ml-service
+docker build -t fish-harvest-ml-service .
+docker run -p 8000:8000 fish-harvest-ml-service
 
 # Railway deployment
 railway login

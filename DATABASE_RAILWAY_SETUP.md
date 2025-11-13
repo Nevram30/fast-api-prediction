@@ -127,7 +127,7 @@ The database will have these tables:
 - `id` (Auto-increment, Primary Key)
 - `request_id` (Foreign Key)
 - `prediction_date`
-- `predicted_price`
+- `predicted_harvest`
 - `confidence_lower`
 - `confidence_upper`
 - `created_at`

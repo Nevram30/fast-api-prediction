@@ -79,7 +79,7 @@ def create_predictions(
         db_pred = Prediction(
             request_id=request_id,
             prediction_date=datetime.strptime(pred.date, "%Y-%m-%d").date(),
-            predicted_price=pred.predicted_price,
+            predicted_harvest=pred.predicted_harvest,
             confidence_lower=pred.confidence_lower,
             confidence_upper=pred.confidence_upper
         )

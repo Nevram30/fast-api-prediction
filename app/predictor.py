@@ -1,6 +1,6 @@
 """
 ML Prediction Logic
-Handles loading models and making predictions
+Handles loading models and making harvest forecasts
 """
 import os
 import pickle
@@ -33,13 +33,13 @@ class ModelPredictor:
         
         # Load Tilapia model
         if os.path.exists(settings.tilapia_model_path):
-            self._load_single_model('tilapia', settings.tilapia_model_path, 'Tilapia Price Forecast Model')
+            self._load_single_model('tilapia', settings.tilapia_model_path, 'Tilapia Harvest Forecast Model')
         else:
             logger.warning(f"✗ Tilapia model not found at {settings.tilapia_model_path}")
         
         # Load Bangus model
         if os.path.exists(settings.bangus_model_path):
-            self._load_single_model('bangus', settings.bangus_model_path, 'Bangus Price Forecast Model')
+            self._load_single_model('bangus', settings.bangus_model_path, 'Bangus Harvest Forecast Model')
         else:
             logger.warning(f"✗ Bangus model not found at {settings.bangus_model_path}")
         
@@ -110,7 +110,7 @@ class ModelPredictor:
         city: str
     ) -> List[PredictionPoint]:
         """
-        Make price predictions for the specified date range
+        Make harvest forecasts for the specified date range (by month)
         
         Args:
             species: Fish species (tilapia or bangus)
@@ -120,7 +120,7 @@ class ModelPredictor:
             city: City/Municipality name
         
         Returns:
-            List of prediction points
+            List of prediction points with harvest forecasts
         """
         species = species.lower()
         
@@ -140,8 +140,8 @@ class ModelPredictor:
         if days_diff > settings.max_forecast_days:
             raise ValueError(f"Date range exceeds maximum of {settings.max_forecast_days} days")
         
-        # Generate date range
-        date_range = pd.date_range(start=start_date, end=end_date, freq='D')
+        # Generate date range (monthly basis for harvest forecasts)
+        date_range = pd.date_range(start=start_date, end=end_date, freq='MS')  # MS = Month Start
         
         # Prepare features for prediction
         features_df = self._prepare_features(
@@ -166,12 +166,12 @@ class ModelPredictor:
                 except:
                     pass
             
-            # Create prediction points
+            # Create prediction points (harvest forecasts by month)
             prediction_points = []
             for i, date in enumerate(date_range):
                 point = PredictionPoint(
                     date=date.strftime("%Y-%m-%d"),
-                    predicted_price=float(predictions[i])
+                    predicted_harvest=float(predictions[i])  # This represents harvest amount in kg
                 )
                 
                 # Add confidence intervals if available
@@ -184,8 +184,8 @@ class ModelPredictor:
             return prediction_points
             
         except Exception as e:
-            logger.error(f"Prediction error: {e}")
-            raise ValueError(f"Failed to make predictions: {str(e)}")
+            logger.error(f"Harvest forecast error: {e}")
+            raise ValueError(f"Failed to make harvest forecast: {str(e)}")
     
     def _prepare_features(
         self,
@@ -195,12 +195,13 @@ class ModelPredictor:
         species: str
     ) -> pd.DataFrame:
         """
-        Prepare features for model prediction
+        Prepare features for harvest forecast model
         
         Creates features that match the model's training data:
         - AvgWeight: Average weight of fish
         - Fingerlings: Number of fingerlings
         - SurvivalRate: Survival rate percentage
+        - Month-based features for harvest forecasting
         """
         # Get the model to check what features it expects
         model = self.models[species]

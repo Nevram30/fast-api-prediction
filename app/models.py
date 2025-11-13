@@ -7,7 +7,7 @@ from pydantic import BaseModel, Field, validator
 
 
 class PredictionRequest(BaseModel):
-    """Request model for price prediction"""
+    """Request model for harvest forecast"""
     
     species: str = Field(..., description="Fish species (tilapia or bangus)")
     date_from: str = Field(..., alias="dateFrom", description="Start date (YYYY-MM-DD)")
@@ -46,10 +46,10 @@ class PredictionRequest(BaseModel):
 
 
 class PredictionPoint(BaseModel):
-    """Single prediction point"""
+    """Single harvest forecast point"""
     
-    date: str = Field(..., description="Prediction date (YYYY-MM-DD)")
-    predicted_price: float = Field(..., description="Predicted price in PHP")
+    date: str = Field(..., description="Forecast date (YYYY-MM-DD)")
+    predicted_harvest: float = Field(..., description="Predicted harvest amount (kg)")
     confidence_lower: Optional[float] = Field(None, description="Lower confidence bound")
     confidence_upper: Optional[float] = Field(None, description="Upper confidence bound")
     
@@ -57,9 +57,9 @@ class PredictionPoint(BaseModel):
         json_schema_extra = {
             "example": {
                 "date": "2024-01-15",
-                "predicted_price": 125.50,
-                "confidence_lower": 120.00,
-                "confidence_upper": 131.00
+                "predicted_harvest": 1250.50,
+                "confidence_lower": 1100.00,
+                "confidence_upper": 1400.00
             }
         }
 
@@ -76,20 +76,20 @@ class ModelInfo(BaseModel):
     class Config:
         json_schema_extra = {
             "example": {
-                "model_name": "Tilapia Price Forecast Model",
+                "model_name": "Tilapia Harvest Forecast Model",
                 "species": "tilapia",
                 "version": "1.0.0",
                 "last_trained": "2024-01-01",
-                "features_used": ["date", "province", "city", "historical_prices"]
+                "features_used": ["month", "province", "city", "avg_weight", "fingerlings", "survival_rate"]
             }
         }
 
 
 class PredictionResponse(BaseModel):
-    """Response model for price prediction"""
+    """Response model for harvest forecast"""
     
-    success: bool = Field(..., description="Whether prediction was successful")
-    predictions: List[PredictionPoint] = Field(..., description="List of predictions")
+    success: bool = Field(..., description="Whether forecast was successful")
+    predictions: List[PredictionPoint] = Field(..., description="List of harvest forecasts")
     model_info: ModelInfo = Field(..., description="Information about the model used")
     metadata: Dict[str, Any] = Field(default_factory=dict, description="Additional metadata")
     
@@ -99,21 +99,21 @@ class PredictionResponse(BaseModel):
                 "success": True,
                 "predictions": [
                     {
-                        "date": "2024-01-15",
-                        "predicted_price": 125.50,
-                        "confidence_lower": 120.00,
-                        "confidence_upper": 131.00
+                        "date": "2024-01-01",
+                        "predicted_harvest": 1250.50,
+                        "confidence_lower": 1100.00,
+                        "confidence_upper": 1400.00
                     }
                 ],
                 "model_info": {
-                    "model_name": "Tilapia Price Forecast Model",
+                    "model_name": "Tilapia Harvest Forecast Model",
                     "species": "tilapia",
                     "version": "1.0.0"
                 },
                 "metadata": {
                     "province": "Pampanga",
                     "city": "Mexico",
-                    "prediction_count": 31
+                    "forecast_count": 12
                 }
             }
         }
@@ -170,13 +170,13 @@ class ModelListResponse(BaseModel):
                 "models": [
                     {
                         "species": "tilapia",
-                        "name": "Tilapia Price Forecast Model",
+                        "name": "Tilapia Harvest Forecast Model",
                         "status": "loaded",
                         "path": "models/tilapia_forecast_best_model.pkl"
                     },
                     {
                         "species": "bangus",
-                        "name": "Bangus Price Forecast Model",
+                        "name": "Bangus Harvest Forecast Model",
                         "status": "loaded",
                         "path": "models/bangus_forecast_best_model.pkl"
                     }

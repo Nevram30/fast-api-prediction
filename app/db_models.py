@@ -37,7 +37,7 @@ class Prediction(Base):
     id = Column(Integer, primary_key=True, index=True, autoincrement=True)
     request_id = Column(String(36), ForeignKey("prediction_requests.request_id"), nullable=False, index=True)
     prediction_date = Column(Date, nullable=False, index=True)
-    predicted_price = Column(DECIMAL(10, 2), nullable=False)
+    predicted_harvest = Column(DECIMAL(10, 2), nullable=False)
     confidence_lower = Column(DECIMAL(10, 2), nullable=True)
     confidence_upper = Column(DECIMAL(10, 2), nullable=True)
     created_at = Column(TIMESTAMP, server_default=func.now(), nullable=False)
@@ -46,4 +46,4 @@ class Prediction(Base):
     request = relationship("PredictionRequest", back_populates="predictions")
     
     def __repr__(self):
-        return f"<Prediction(id={self.id}, date={self.prediction_date}, price={self.predicted_price})>"
+        return f"<Prediction(id={self.id}, date={self.prediction_date}, harvest={self.predicted_harvest})>"

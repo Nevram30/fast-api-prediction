@@ -1,6 +1,6 @@
 """
 FastAPI ML Service - Main Application
-Fish Price Forecast API
+Fish Harvest Forecast API
 """
 from datetime import datetime
 from typing import Optional, List
@@ -34,7 +34,7 @@ logger = logging.getLogger(__name__)
 app = FastAPI(
     title=settings.app_name,
     version=settings.version,
-    description="ML Service for Fish Price Forecasting - Tilapia and Bangus",
+    description="ML Service for Fish Harvest Forecasting - Tilapia and Bangus",
     docs_url="/docs",
     redoc_url="/redoc",
     openapi_url="/openapi.json"
@@ -145,9 +145,9 @@ async def predict_prices(
     db: Optional[Session] = Depends(get_db)
 ):
     """
-    Predict fish prices for a given date range
+    Forecast fish harvest for a given date range (by month)
     
-    This endpoint accepts prediction parameters and returns forecasted prices
+    This endpoint accepts forecast parameters and returns predicted harvest amounts
     for the specified fish species, location, and date range.
     
     **Parameters:**
@@ -158,12 +158,12 @@ async def predict_prices(
     - **city**: City/Municipality name
     
     **Returns:**
-    - List of predictions with dates and forecasted prices
+    - List of harvest forecasts with dates and predicted amounts (kg)
     - Model information
-    - Metadata about the prediction
+    - Metadata about the forecast
     """
     try:
-        logger.info(f"Prediction request: {request.species} from {request.date_from} to {request.date_to}")
+        logger.info(f"Harvest forecast request: {request.species} from {request.date_from} to {request.date_to}")
         
         # Check if model is loaded
         if not predictor.is_model_loaded(request.species):
@@ -172,7 +172,7 @@ async def predict_prices(
                 detail=f"Model for {request.species} is not available"
             )
         
-        # Make predictions
+        # Make harvest forecasts
         predictions = predictor.predict(
             species=request.species,
             date_from=request.date_from,
@@ -217,7 +217,7 @@ async def predict_prices(
                     predictions=predictions
                 )
                 
-                logger.info(f"Predictions saved to database with request_id: {request_id}")
+                logger.info(f"Harvest forecasts saved to database with request_id: {request_id}")
             except Exception as db_error:
                 logger.error(f"Failed to save to database: {db_error}")
                 # Continue even if database save fails
@@ -238,7 +238,7 @@ async def predict_prices(
             }
         )
         
-        logger.info(f"Prediction successful: {len(predictions)} points generated")
+        logger.info(f"Harvest forecast successful: {len(predictions)} points generated")
         return response
         
     except ValueError as e:
@@ -248,7 +248,7 @@ async def predict_prices(
             detail=str(e)
         )
     except Exception as e:
-        logger.error(f"Prediction error: {e}", exc_info=True)
+        logger.error(f"Harvest forecast error: {e}", exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Internal server error: {str(e)}"
@@ -257,7 +257,7 @@ async def predict_prices(
 
 @app.get(
     f"{settings.api_prefix}/predictions",
-    tags=["Saved Predictions"]
+    tags=["Saved Forecasts"]
 )
 async def get_saved_predictions(
     species: Optional[str] = None,
@@ -268,7 +268,7 @@ async def get_saved_predictions(
     db: Session = Depends(get_db)
 ):
     """
-    Get saved prediction requests with optional filters
+    Get saved harvest forecast requests with optional filters
     
     **Query Parameters:**
     - **species**: Filter by fish species (tilapia or bangus)
@@ -278,7 +278,7 @@ async def get_saved_predictions(
     - **limit**: Maximum number of records to return (max 100)
     
     **Returns:**
-    - List of saved prediction requests with metadata
+    - List of saved harvest forecast requests with metadata
     """
     if not is_db_available():
         raise HTTPException(
@@ -323,7 +323,7 @@ async def get_saved_predictions(
             "limit": limit
         }
     except Exception as e:
-        logger.error(f"Error fetching predictions: {e}")
+        logger.error(f"Error fetching harvest forecasts: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=str(e)
@@ -332,20 +332,20 @@ async def get_saved_predictions(
 
 @app.get(
     f"{settings.api_prefix}/predictions/{{request_id}}",
-    tags=["Saved Predictions"]
+    tags=["Saved Forecasts"]
 )
 async def get_prediction_by_id(
     request_id: str,
     db: Session = Depends(get_db)
 ):
     """
-    Get a specific prediction request and all its predictions
+    Get a specific harvest forecast request and all its forecasts
     
     **Path Parameters:**
-    - **request_id**: UUID of the prediction request
+    - **request_id**: UUID of the forecast request
     
     **Returns:**
-    - Prediction request details with all prediction points
+    - Harvest forecast request details with all forecast points
     """
     if not is_db_available():
         raise HTTPException(
@@ -359,7 +359,7 @@ async def get_prediction_by_id(
         if not db_request:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
-                detail=f"Prediction request {request_id} not found"
+                detail=f"Harvest forecast request {request_id} not found"
             )
         
         predictions = crud.get_predictions_by_request(db, request_id)
@@ -379,7 +379,7 @@ async def get_prediction_by_id(
             "predictions": [
                 {
                     "date": pred.prediction_date.isoformat(),
-                    "predicted_price": float(pred.predicted_price),
+                    "predicted_harvest": float(pred.predicted_price),
                     "confidence_lower": float(pred.confidence_lower) if pred.confidence_lower else None,
                     "confidence_upper": float(pred.confidence_upper) if pred.confidence_upper else None
                 }
@@ -390,7 +390,7 @@ async def get_prediction_by_id(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Error fetching prediction: {e}")
+        logger.error(f"Error fetching harvest forecast: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=str(e)
@@ -399,17 +399,17 @@ async def get_prediction_by_id(
 
 @app.delete(
     f"{settings.api_prefix}/predictions/{{request_id}}",
-    tags=["Saved Predictions"]
+    tags=["Saved Forecasts"]
 )
 async def delete_prediction(
     request_id: str,
     db: Session = Depends(get_db)
 ):
     """
-    Delete a prediction request and all its predictions
+    Delete a harvest forecast request and all its forecasts
     
     **Path Parameters:**
-    - **request_id**: UUID of the prediction request to delete
+    - **request_id**: UUID of the harvest forecast request to delete
     
     **Returns:**
     - Success message
@@ -426,17 +426,17 @@ async def delete_prediction(
         if not deleted:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
-                detail=f"Prediction request {request_id} not found"
+                detail=f"Harvest forecast request {request_id} not found"
             )
         
         return {
             "success": True,
-            "message": f"Prediction request {request_id} deleted successfully"
+            "message": f"Harvest forecast request {request_id} deleted successfully"
         }
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Error deleting prediction: {e}")
+        logger.error(f"Error deleting harvest forecast: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=str(e)

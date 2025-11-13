@@ -1,6 +1,6 @@
-# 🐟 Fish Price Forecast ML Service
+# 🐟 Fish Harvest Forecast ML Service
 
-A standalone FastAPI service for predicting fish prices (Tilapia and Bangus) using machine learning models.
+A standalone FastAPI service for forecasting fish harvest amounts (Tilapia and Bangus) using machine learning models.
 
 ## 🚀 Features
 
@@ -23,7 +23,7 @@ A standalone FastAPI service for predicting fish prices (Tilapia and Bangus) usi
 - `GET /api/v1/models` - List all available models
 
 ### Predictions
-- `POST /api/v1/predict` - Get price predictions
+- `POST /api/v1/predict` - Get harvest forecasts
 
 ### Documentation
 - `GET /docs` - Interactive Swagger UI documentation
@@ -96,10 +96,10 @@ uvicorn app.main:app --host 0.0.0.0 --port 8000
 
 ```bash
 # Build the image
-docker build -t fish-price-ml-service .
+docker build -t fish-harvest-ml-service .
 
 # Run the container
-docker run -p 8000:8000 fish-price-ml-service
+docker run -p 8000:8000 fish-harvest-ml-service
 ```
 
 ## 🚂 Railway Deployment
@@ -160,7 +160,7 @@ Response:
 }
 ```
 
-### Get Predictions
+### Get Harvest Forecasts
 ```bash
 curl -X POST https://your-service.railway.app/api/v1/predict \
   -H "Content-Type: application/json" \
@@ -180,20 +180,20 @@ Response:
   "predictions": [
     {
       "date": "2024-01-01",
-      "predicted_price": 125.50,
-      "confidence_lower": 120.00,
-      "confidence_upper": 131.00
+      "predicted_harvest": 1250.50,
+      "confidence_lower": 1100.00,
+      "confidence_upper": 1400.00
     }
   ],
   "model_info": {
-    "model_name": "Tilapia Price Forecast Model",
+    "model_name": "Tilapia Harvest Forecast Model",
     "species": "tilapia",
     "version": "1.0.0"
   },
   "metadata": {
     "province": "Pampanga",
     "city": "Mexico",
-    "prediction_count": 31
+    "forecast_count": 12
   }
 }
 ```
@@ -202,7 +202,7 @@ Response:
 ```typescript
 const ML_SERVICE_URL = process.env.ML_SERVICE_URL || 'http://localhost:8000';
 
-async function getPredictions(data) {
+async function getHarvestForecasts(data) {
   const response = await fetch(`${ML_SERVICE_URL}/api/v1/predict`, {
     method: 'POST',
     headers: {
@@ -225,7 +225,7 @@ async function getPredictions(data) {
 }
 
 // Usage
-const predictions = await getPredictions({
+const forecasts = await getHarvestForecasts({
   species: 'tilapia',
   dateFrom: '2024-01-01',
   dateTo: '2024-01-31',
@@ -272,7 +272,7 @@ export async function POST(request: NextRequest) {
     
   } catch (error) {
     return NextResponse.json(
-      { success: false, error: 'Failed to get predictions' },
+      { success: false, error: 'Failed to get harvest forecasts' },
       { status: 500 }
     );
   }
@@ -341,9 +341,9 @@ Your ML models should be:
 ### Model Feature Requirements
 
 The predictor expects models to work with these features:
-- Date features (year, month, day, day_of_week, etc.)
+- Month-based features for harvest forecasting
 - Location features (province, city)
-- Cyclical time features (month_sin, month_cos, etc.)
+- Aquaculture features (AvgWeight, Fingerlings, SurvivalRate)
 
 **Note:** Modify `app/predictor.py` `_prepare_features()` method to match your model's exact feature requirements.
 
