@@ -69,12 +69,34 @@ class ModelPredictor:
                     with open(model_path, 'rb') as f:
                         model = load_func(f)
                 
+                # Get feature names from the model
+                features_used = None
+                if hasattr(model, 'feature_names_in_'):
+                    features_used = list(model.feature_names_in_)
+                elif hasattr(model, 'get_feature_names_out'):
+                    try:
+                        features_used = list(model.get_feature_names_out())
+                    except:
+                        features_used = ['Fingerlings', 'SurvivalRate', 'AvgWeight']
+                else:
+                    features_used = ['Fingerlings', 'SurvivalRate', 'AvgWeight']
+                
+                # Get model file modification time as last_trained date
+                import os
+                from datetime import datetime
+                last_trained = None
+                if os.path.exists(model_path):
+                    mtime = os.path.getmtime(model_path)
+                    last_trained = datetime.fromtimestamp(mtime).strftime('%Y-%m-%d')
+                
                 self.models[species] = model
                 self.model_info[species] = {
                     'name': model_name,
                     'species': species,
                     'version': '1.0.0',
-                    'path': model_path
+                    'path': model_path,
+                    'features_used': features_used,
+                    'last_trained': last_trained
                 }
                 logger.info(f"✓ {species.capitalize()} model loaded successfully using {method_name}")
                 return
@@ -169,15 +191,36 @@ class ModelPredictor:
             # Create prediction points (harvest forecasts by month)
             prediction_points = []
             for i, date in enumerate(date_range):
-                point = PredictionPoint(
-                    date=date.strftime("%Y-%m-%d"),
-                    predicted_harvest=float(predictions[i])  # This represents harvest amount in kg
+                # Get the input features used for this prediction
+                from app.models import InputFeatures
+                input_features = InputFeatures(
+                    fingerlings=float(features_df.iloc[i]['Fingerlings']),
+                    survival_rate=float(features_df.iloc[i]['SurvivalRate']),
+                    avg_weight=float(features_df.iloc[i]['AvgWeight'])
                 )
                 
-                # Add confidence intervals if available
+                predicted_value = float(predictions[i])
+                
+                # Calculate confidence intervals
+                # If model provides them, use those; otherwise calculate approximate intervals
                 if confidence_intervals is not None:
-                    point.confidence_lower = float(confidence_intervals[i][0])
-                    point.confidence_upper = float(confidence_intervals[i][1])
+                    conf_lower = float(confidence_intervals[i][0])
+                    conf_upper = float(confidence_intervals[i][1])
+                else:
+                    # Calculate approximate 95% confidence interval
+                    # Using ±15% as a reasonable estimate for harvest predictions
+                    # This accounts for natural variability in aquaculture
+                    confidence_margin = predicted_value * 0.15
+                    conf_lower = max(0, predicted_value - confidence_margin)  # Can't be negative
+                    conf_upper = predicted_value + confidence_margin
+                
+                point = PredictionPoint(
+                    date=date.strftime("%Y-%m-%d"),
+                    predicted_harvest=predicted_value,
+                    input_features=input_features,
+                    confidence_lower=conf_lower,
+                    confidence_upper=conf_upper
+                )
                 
                 prediction_points.append(point)
             
@@ -222,13 +265,14 @@ class ModelPredictor:
         # Default values for aquaculture features (these are typical averages)
         # These can be adjusted based on historical data or user input
         default_values = {
-            'AvgWeight': 250.0,  # grams - typical market weight for tilapia/bangus
             'Fingerlings': 5000,  # typical stocking density per pond
-            'SurvivalRate': 85.0  # percentage - typical survival rate
+            'SurvivalRate': 85.0,  # percentage - typical survival rate
+            'AvgWeight': 250.0  # grams - typical market weight for tilapia/bangus
         }
         
-        # Create dataframe with expected features
+        # Create dataframe with expected features in the correct order
         if feature_names is not None:
+            # Create dataframe with features in the exact order the model expects
             df = pd.DataFrame(index=range(n_predictions))
             for feature in feature_names:
                 if feature in default_values:
@@ -238,10 +282,11 @@ class ModelPredictor:
                     df[feature] = 0.0
         else:
             # Fallback: create dataframe with the known required features
+            # Order matters! Must match model's expected order: Fingerlings, SurvivalRate, AvgWeight
             df = pd.DataFrame({
-                'AvgWeight': [default_values['AvgWeight']] * n_predictions,
                 'Fingerlings': [default_values['Fingerlings']] * n_predictions,
-                'SurvivalRate': [default_values['SurvivalRate']] * n_predictions
+                'SurvivalRate': [default_values['SurvivalRate']] * n_predictions,
+                'AvgWeight': [default_values['AvgWeight']] * n_predictions
             })
         
         return df

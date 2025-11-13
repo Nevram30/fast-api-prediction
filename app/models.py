@@ -45,11 +45,29 @@ class PredictionRequest(BaseModel):
             raise ValueError("Date must be in YYYY-MM-DD format")
 
 
+class InputFeatures(BaseModel):
+    """Input features used for prediction"""
+    
+    fingerlings: float = Field(..., description="Number of fingerlings")
+    survival_rate: float = Field(..., description="Survival rate (0-1)")
+    avg_weight: float = Field(..., description="Average weight (kg)")
+    
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "fingerlings": 1000.0,
+                "survival_rate": 0.85,
+                "avg_weight": 0.25
+            }
+        }
+
+
 class PredictionPoint(BaseModel):
     """Single harvest forecast point"""
     
     date: str = Field(..., description="Forecast date (YYYY-MM-DD)")
     predicted_harvest: float = Field(..., description="Predicted harvest amount (kg)")
+    input_features: InputFeatures = Field(..., description="Input features used for this prediction")
     confidence_lower: Optional[float] = Field(None, description="Lower confidence bound")
     confidence_upper: Optional[float] = Field(None, description="Upper confidence bound")
     
@@ -58,6 +76,11 @@ class PredictionPoint(BaseModel):
             "example": {
                 "date": "2024-01-15",
                 "predicted_harvest": 1250.50,
+                "input_features": {
+                    "fingerlings": 1000.0,
+                    "survival_rate": 0.85,
+                    "avg_weight": 0.25
+                },
                 "confidence_lower": 1100.00,
                 "confidence_upper": 1400.00
             }

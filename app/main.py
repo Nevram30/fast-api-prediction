@@ -186,7 +186,9 @@ async def predict_prices(
         model_info = ModelInfo(
             model_name=model_info_dict['name'],
             species=model_info_dict['species'],
-            version=model_info_dict['version']
+            version=model_info_dict['version'],
+            last_trained=model_info_dict.get('last_trained'),
+            features_used=model_info_dict.get('features_used')
         )
         
         # Save to database if available
