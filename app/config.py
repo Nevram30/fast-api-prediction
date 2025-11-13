@@ -23,12 +23,14 @@ class Settings(BaseSettings):
     debug: bool = environment == "development"
     
     # CORS Configuration
-    allowed_origins: List[str] = [
-        "http://localhost:3000",
-        "http://localhost:3001",
-        "https://*.railway.app",
-        "https://*.vercel.app",
-    ]
+    allowed_origins: str = "http://localhost:3000,http://localhost:3001,https://*.railway.app,https://*.vercel.app"
+    
+    @property
+    def cors_origins(self) -> List[str]:
+        """Parse CORS origins from comma-separated string"""
+        if not self.allowed_origins:
+            return ["*"]
+        return [origin.strip() for origin in self.allowed_origins.split(",")]
     
     # Model Configuration
     models_dir: str = "app/models"
