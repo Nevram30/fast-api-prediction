@@ -26,9 +26,15 @@ def init_db():
         return False
     
     try:
+        # Convert Railway's mysql:// to mysql+pymysql:// for SQLAlchemy
+        database_url = settings.database_url
+        if database_url.startswith("mysql://"):
+            database_url = database_url.replace("mysql://", "mysql+pymysql://", 1)
+            logger.info("Converted DATABASE_URL to use PyMySQL driver")
+        
         # Create engine with MySQL-specific settings
         engine = create_engine(
-            settings.database_url,
+            database_url,
             echo=settings.database_echo,
             pool_pre_ping=True,  # Verify connections before using
             pool_recycle=3600,   # Recycle connections after 1 hour
