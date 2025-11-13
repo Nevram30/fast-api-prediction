@@ -49,7 +49,7 @@ def init_db():
         return False
 
 
-def get_db() -> Generator[Session, None, None]:
+def get_db() -> Generator[Session | None, None, None]:
     """
     Dependency function to get database session
     
@@ -57,9 +57,13 @@ def get_db() -> Generator[Session, None, None]:
         @app.get("/endpoint")
         def endpoint(db: Session = Depends(get_db)):
             # Use db here
+    
+    Returns None if database is not initialized.
     """
     if SessionLocal is None:
-        raise RuntimeError("Database not initialized. Call init_db() first.")
+        # Return None instead of raising error - allows endpoints to work without DB
+        yield None
+        return
     
     db = SessionLocal()
     try:

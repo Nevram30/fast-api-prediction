@@ -142,7 +142,7 @@ async def list_models():
 async def predict_prices(
     request: PredictionRequest,
     http_request: Request,
-    db: Session = Depends(get_db)
+    db: Optional[Session] = Depends(get_db)
 ):
     """
     Predict fish prices for a given date range
