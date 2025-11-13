@@ -2,8 +2,9 @@
 Configuration management for the ML Service
 """
 import os
-from typing import List
-from pydantic_settings import BaseSettings
+from typing import List, Optional
+from pydantic import Field
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
@@ -23,14 +24,23 @@ class Settings(BaseSettings):
     debug: bool = environment == "development"
     
     # CORS Configuration
-    allowed_origins: str = "http://localhost:3000,http://localhost:3001,https://*.railway.app,https://*.vercel.app"
+    allowed_origins: str = Field(
+        default="http://localhost:3000,http://localhost:3001,https://*.railway.app,https://*.vercel.app",
+        json_schema_extra={"env": "ALLOWED_ORIGINS"}
+    )
+    
+    model_config = SettingsConfigDict(
+        env_file=".env",
+        case_sensitive=False,
+        extra="ignore"
+    )
     
     @property
     def cors_origins(self) -> List[str]:
         """Parse CORS origins from comma-separated string"""
-        if not self.allowed_origins:
+        if not self.allowed_origins or self.allowed_origins.strip() == "":
             return ["*"]
-        return [origin.strip() for origin in self.allowed_origins.split(",")]
+        return [origin.strip() for origin in self.allowed_origins.split(",") if origin.strip()]
     
     # Model Configuration
     models_dir: str = "app/models"
@@ -44,10 +54,6 @@ class Settings(BaseSettings):
     # Database Configuration
     database_url: str = os.getenv("DATABASE_URL", "")
     database_echo: bool = debug  # Log SQL queries in debug mode
-    
-    class Config:
-        env_file = ".env"
-        case_sensitive = False
 
 
 # Global settings instance
